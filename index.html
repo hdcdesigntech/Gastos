@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Presupuesto | HDC</title>
+    <!-- Incluyendo Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        hdc: {
+                            blue: '#0B192C',     // Azul oscuro corporativo
+                            blueLight: '#1A365D', // Azul secundario
+                            gold: '#D4AF37',      // Dorado base
+                            goldLight: '#F3E5AB', // Dorado claro
+                            silver: '#C0C0C0',    // Plateado
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; 
+        }
+
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] { -moz-appearance: textfield; }
+
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        
+        /* Degradados personalizados para texto */
+        .text-gradient-gold {
+            background: linear-gradient(to right, #D4AF37, #FFF8DC, #D4AF37);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .text-gradient-silver {
+            background: linear-gradient(to right, #E2E8F0, #FFFFFF, #CBD5E1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .bg-gradient-gold {
+            background: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #F3E5AB 100%);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Estilo para el Toggle Switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #D4AF37;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #D4AF37;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen pb-12">
+
+    <div class="max-w-3xl mx-auto pt-8 px-4 sm:px-6">
+        
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-hdc-blue mb-2">Control de Inversión Inicial</h1>
+            <p class="text-slate-500 font-medium">HDC Design & Tech</p>
+        </header>
+
+        <!-- Tarjeta de Saldo Principal (Estilo HDC) -->
+        <div class="bg-gradient-to-br from-hdc-blue to-hdc-blueLight rounded-2xl shadow-2xl p-6 sm:p-8 mb-8 relative overflow-hidden border border-slate-700">
+            <!-- Destellos decorativos (Plateado/Dorado) -->
+            <div class="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 rounded-full bg-gradient-to-br from-hdc-gold to-transparent opacity-20 blur-2xl"></div>
+            <div class="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 rounded-full bg-gradient-to-tr from-hdc-silver to-transparent opacity-10 blur-2xl"></div>
+            
+            <div class="relative z-10 text-center">
+                <p class="text-hdc-silver font-medium mb-1 uppercase tracking-wider text-sm flex justify-center items-center gap-2">
+                    Saldo Disponible
+                </p>
+                <div class="flex items-center justify-center gap-2 mt-2">
+                    <span class="text-5xl sm:text-6xl font-bold tracking-tight text-gradient-gold" id="saldo-actual">0,00</span>
+                    <span class="text-2xl font-medium text-hdc-goldLight align-bottom pb-2">Bs</span>
+                </div>
+                
+                <div class="mt-8 flex flex-col sm:flex-row justify-center gap-4 text-sm">
+                    <div class="bg-black bg-opacity-30 px-5 py-3 rounded-xl border border-white/10 flex items-center justify-between gap-3 group">
+                        <span class="text-hdc-silver">Presupuesto Inicial:</span>
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold text-white" id="display-presupuesto">0,00 Bs</span>
+                            <button onclick="abrirModalPresupuesto()" class="text-hdc-gold hover:text-white transition-colors p-1 rounded" title="Editar Presupuesto">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bg-black bg-opacity-30 px-5 py-3 rounded-xl border border-white/10 flex items-center justify-between gap-3">
+                        <span class="text-hdc-silver">Total Gastado:</span>
+                        <span class="font-semibold text-white" id="total-gastado">0,00 Bs</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-8">
+            <!-- Panel de Registro -->
+            <div class="bg-white rounded-2xl shadow-md border border-slate-200 p-6 sm:p-8">
+                <h2 class="text-xl font-bold text-hdc-blue mb-6 flex items-center gap-2 border-b pb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-hdc-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Registrar Nueva Compra
+                </h2>
+                
+                <form id="form-gastos" class="space-y-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <!-- Concepto -->
+                        <div class="sm:col-span-2">
+                            <label for="concepto" class="block text-sm font-semibold text-slate-700 mb-1">Concepto o Material</label>
+                            <input type="text" id="concepto" required 
+                                   class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-hdc-gold focus:border-hdc-gold outline-none transition-all placeholder-slate-400 bg-slate-50 focus:bg-white"
+                                   placeholder="Ej: Resmas de papel, Tinta Epson, Mantenimiento...">
+                        </div>
+                        
+                        <!-- Monto -->
+                        <div>
+                            <label for="monto" class="block text-sm font-semibold text-slate-700 mb-1">Monto (Bs)</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <span class="text-slate-500 font-medium">Bs</span>
+                                </div>
+                                <input type="number" id="monto" required step="0.01" min="0.01"
+                                       class="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-hdc-gold focus:border-hdc-gold outline-none transition-all placeholder-slate-400 bg-slate-50 focus:bg-white"
+                                       placeholder="0.00">
+                            </div>
+                        </div>
+
+                        <!-- Categoría -->
+                        <div>
+                            <label for="categoria" class="block text-sm font-semibold text-slate-700 mb-1">Categoría</label>
+                            <select id="categoria" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-hdc-gold focus:border-hdc-gold outline-none transition-all bg-slate-50 focus:bg-white cursor-pointer">
+                                <option value="consumibles">Consumibles</option>
+                                <option value="equipos">Equipos</option>
+                                <option value="maquinarias">Maquinarias</option>
+                                <option value="oficina">Material de oficina</option>
+                            </select>
+                        </div>
+
+                        <!-- Fecha -->
+                        <div>
+                            <label for="fecha" class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Compra</label>
+                            <input type="date" id="fecha" required 
+                                   class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-hdc-gold focus:border-hdc-gold outline-none transition-all bg-slate-50 focus:bg-white">
+                        </div>
+
+                        <!-- Factura (Toggle + Input) -->
+                        <div class="flex flex-col justify-center">
+                            <div class="flex items-center justify-between mb-2 mt-2 sm:mt-6">
+                                <label for="tiene-factura" class="text-sm font-semibold text-slate-700 cursor-pointer">¿Tiene Factura?</label>
+                                <!-- Toggle Switch -->
+                                <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                                    <input type="checkbox" name="toggle" id="tiene-factura" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-slate-300 appearance-none cursor-pointer transition-all duration-300 z-10"/>
+                                    <label for="tiene-factura" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-all duration-300"></label>
+                                </div>
+                            </div>
+                            
+                            <div id="contenedor-factura" class="hidden transition-all duration-300 flex flex-col gap-3">
+                                <input type="text" id="numero-factura" 
+                                       class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-hdc-gold focus:border-hdc-gold outline-none transition-all bg-slate-50 focus:bg-white text-sm"
+                                       placeholder="Nº de Factura / Recibo">
+                                <div class="relative">
+                                    <input type="file" id="foto-factura" accept="image/*" class="hidden">
+                                    <label for="foto-factura" class="cursor-pointer flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl border border-dashed border-slate-400 bg-slate-50 hover:bg-slate-100 text-slate-600 text-sm transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                        Subir foto de factura
+                                    </label>
+                                    <div id="preview-container" class="mt-2 hidden relative">
+                                        <img id="preview-img" class="w-full h-32 object-cover rounded-lg border border-slate-200">
+                                        <button type="button" id="btn-remove-foto" class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" 
+                            class="w-full mt-4 bg-gradient-gold text-hdc-blue font-bold py-3.5 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex justify-center items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                        Registrar Compra
+                    </button>
+                </form>
+            </div>
+
+            <!-- Historial de Gastos -->
+            <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 flex-wrap gap-3">
+                    <h2 class="text-lg font-bold text-hdc-blue flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-hdc-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                        Historial de Movimientos
+                    </h2>
+                    <div class="flex gap-2">
+                        <button onclick="abrirGaleria()" class="text-sm bg-hdc-blueLight text-white font-semibold px-4 py-2 rounded-lg hover:bg-hdc-blue transition-colors flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            Ver Galería
+                        </button>
+                        <button id="btn-limpiar" class="text-sm text-red-500 hover:text-red-700 font-semibold px-3 py-1 rounded-lg hover:bg-red-50 transition-colors hidden">
+                            Limpiar todo
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="p-0">
+                    <div id="estado-vacio" class="p-12 text-center text-slate-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-slate-200 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                        <p class="font-medium text-lg">Aún no hay registros.</p>
+                        <p class="text-sm mt-1 text-slate-400">Los gastos que registres aparecerán aquí.</p>
+                    </div>
+                    
+                    <ul id="lista-gastos" class="divide-y divide-slate-100 hidden">
+                        <!-- Items via JS -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-galeria" class="fixed inset-0 bg-hdc-blue bg-opacity-90 backdrop-blur-md hidden flex flex-col z-[60] transition-opacity">
+        <div class="flex justify-between items-center p-4 sm:p-6 text-white border-b border-white/10">
+            <h3 class="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-hdc-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                Galería de Facturas
+            </h3>
+            <button onclick="cerrarGaleria()" class="text-slate-300 hover:text-white p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 sm:p-6">
+            <div id="grid-galeria" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                <!-- Fotos renderizadas por JS -->
+            </div>
+            <div id="galeria-vacia" class="hidden h-full flex flex-col items-center justify-center text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <p>No hay facturas registradas aún.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-visor-img" class="fixed inset-0 bg-black bg-opacity-95 backdrop-blur-sm hidden flex items-center justify-center z-[70]">
+        <button onclick="cerrarVisorImg()" class="absolute top-4 right-4 text-white hover:text-red-400 p-2 bg-white/10 rounded-full transition-colors z-10">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+        <div class="max-w-4xl max-h-[90vh] p-4 flex flex-col items-center relative">
+            <img id="visor-imagen-src" src="" class="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl">
+            <div id="visor-imagen-info" class="mt-4 text-white text-center bg-black/50 px-4 py-2 rounded-lg backdrop-blur-md">
+                <!-- Info de la imagen -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Presupuesto -->
+    <div id="modal-presupuesto" class="fixed inset-0 bg-hdc-blue bg-opacity-80 backdrop-blur-sm hidden flex items-center justify-center z-[80]">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 transform scale-95 opacity-0 transition-all duration-200" id="modal-presupuesto-content">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4 text-hdc-blue">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-hdc-blue mb-4">Editar Presupuesto Inicial</h3>
+                <div class="relative mb-6 text-left">
+                    <label for="input-nuevo-presupuesto" class="block text-sm font-semibold text-slate-700 mb-1">Monto del presupuesto</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <span class="text-slate-500 font-medium">Bs</span>
+                        </div>
+                        <input type="number" id="input-nuevo-presupuesto" step="0.01" min="0" class="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-hdc-gold focus:border-hdc-gold outline-none transition-all bg-slate-50 focus:bg-white text-lg font-semibold">
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" onclick="cerrarModalPresupuesto()" class="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="button" onclick="guardarPresupuesto()" class="flex-1 px-4 py-2.5 bg-hdc-blue text-white font-semibold rounded-xl hover:bg-hdc-blueLight transition-colors">
+                        Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Alerta Custom -->
+    <div id="custom-alert" class="fixed inset-0 bg-hdc-blue bg-opacity-80 backdrop-blur-sm hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 transform scale-95 opacity-0 transition-all duration-200" id="alert-content">
+            <div class="text-center">
+                <div id="alert-icon-bg" class="mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4">
+                    <svg id="alert-icon" class="h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"></svg>
+                </div>
+                <h3 class="text-xl font-bold text-hdc-blue mb-2" id="alert-title">Atención</h3>
+                <p class="text-slate-600" id="alert-message">Mensaje aquí</p>
+                <div class="mt-6 flex gap-3">
+                    <button type="button" id="alert-btn-cancelar" class="hidden flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="button" id="alert-btn-ok" class="flex-1 px-4 py-2.5 bg-hdc-blue text-white font-semibold rounded-xl hover:bg-hdc-blueLight transition-colors">
+                        Entendido
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuración y Variables de Estado
+        let presupuestoInicial = 700000;
+        let gastos = [];
+
+        // Elementos del DOM
+        const form = document.getElementById('form-gastos');
+        const listaGastos = document.getElementById('lista-gastos');
+        const estadoVacio = document.getElementById('estado-vacio');
+        const saldoActualDisplay = document.getElementById('saldo-actual');
+        const totalGastadoDisplay = document.getElementById('total-gastado');
+        const displayPresupuesto = document.getElementById('display-presupuesto');
+        const btnLimpiar = document.getElementById('btn-limpiar');
+        const fechaInput = document.getElementById('fecha');
+        
+        // Elementos del Toggle de Factura
+        const checkFactura = document.getElementById('tiene-factura');
+        const contenedorFactura = document.getElementById('contenedor-factura');
+        const numFacturaInput = document.getElementById('numero-factura');
+        
+        const fotoFacturaInput = document.getElementById('foto-factura');
+        const previewContainer = document.getElementById('preview-container');
+        const previewImg = document.getElementById('preview-img');
+        const btnRemoveFoto = document.getElementById('btn-remove-foto');
+        let fotoFacturaActualBase64 = null;
+
+        // Elementos Galería
+        const modalGaleria = document.getElementById('modal-galeria');
+        const gridGaleria = document.getElementById('grid-galeria');
+        const galeriaVacia = document.getElementById('galeria-vacia');
+        const modalVisorImg = document.getElementById('modal-visor-img');
+        const visorImagenSrc = document.getElementById('visor-imagen-src');
+        const visorImagenInfo = document.getElementById('visor-imagen-info');
+
+        // Formato de Moneda Bs
+        const formatMoneda = (valor) => {
+            return new Intl.NumberFormat('es-VE', { 
+                minimumFractionDigits: 2, 
+                maximumFractionDigits: 2 
+            }).format(valor);
+        };
+
+        // Categorías e Iconos (Colores ajustados a la nueva paleta)
+        const categoriasData = {
+            consumibles: { nombre: 'Consumible', color: 'text-orange-500', bg: 'bg-orange-100' },
+            equipos: { nombre: 'Equipo', color: 'text-blue-600', bg: 'bg-blue-100' },
+            maquinarias: { nombre: 'Maquinaria', color: 'text-indigo-600', bg: 'bg-indigo-100' },
+            oficina: { nombre: 'Mat. Oficina', color: 'text-emerald-600', bg: 'bg-emerald-100' }
+        };
+
+        const getIconSVG = (catKey) => {
+            const icons = {
+                consumibles: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />`,
+                equipos: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />`,
+                maquinarias: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />`,
+                oficina: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />`
+            };
+            return `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">${icons[catKey] || icons.oficina}</svg>`;
+        };
+
+        // Inicializar Aplicación
+        function init() {
+            // Establecer fecha de hoy por defecto
+            const hoy = new Date().toISOString().split('T')[0];
+            fechaInput.value = hoy;
+
+            // Cargar datos
+            const savedData = localStorage.getItem('hdc_control_gastos_v2');
+            const savedPresupuesto = localStorage.getItem('hdc_presupuesto');
+
+            if (savedPresupuesto) presupuestoInicial = parseFloat(savedPresupuesto);
+            
+            if (savedData) {
+                try { gastos = JSON.parse(savedData); } 
+                catch (e) { gastos = []; }
+            }
+            actualizarUI();
+        }
+
+        // Mostrar/Ocultar input de factura
+        checkFactura.addEventListener('change', function() {
+            if(this.checked) {
+                contenedorFactura.classList.remove('hidden');
+                numFacturaInput.required = true;
+                setTimeout(() => numFacturaInput.focus(), 100);
+            } else {
+                contenedorFactura.classList.add('hidden');
+                numFacturaInput.required = false;
+                numFacturaInput.value = '';
+                limpiarFoto();
+            }
+        });
+
+        fotoFacturaInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    // Comprimir imagen usando Canvas para no llenar el localStorage
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800; // Redimensionar
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    // Guardar en calidad 0.7 JPEG
+                    fotoFacturaActualBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                    
+                    previewImg.src = fotoFacturaActualBase64;
+                    previewContainer.classList.remove('hidden');
+                }
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        btnRemoveFoto.addEventListener('click', limpiarFoto);
+
+        function limpiarFoto() {
+            fotoFacturaInput.value = '';
+            fotoFacturaActualBase64 = null;
+            previewContainer.classList.add('hidden');
+            previewImg.src = '';
+        }
+
+        // Actualizar Interfaz
+        function actualizarUI() {
+            const totalGastado = gastos.reduce((acc, current) => acc + current.monto, 0);
+            const saldoDisponible = presupuestoInicial - totalGastado;
+
+            displayPresupuesto.textContent = `${formatMoneda(presupuestoInicial)} Bs`;
+            saldoActualDisplay.textContent = formatMoneda(saldoDisponible);
+            totalGastadoDisplay.textContent = `${formatMoneda(totalGastado)} Bs`;
+
+            // Color del saldo si se pasa o está bajo
+            if (saldoDisponible < 0) {
+                saldoActualDisplay.className = "text-5xl sm:text-6xl font-bold tracking-tight text-red-400";
+            } else if (saldoDisponible < (presupuestoInicial * 0.1)) {
+                saldoActualDisplay.className = "text-5xl sm:text-6xl font-bold tracking-tight text-yellow-400"; 
+            } else {
+                saldoActualDisplay.className = "text-5xl sm:text-6xl font-bold tracking-tight text-gradient-gold";
+            }
+
+            // Actualizar Lista
+            listaGastos.innerHTML = '';
+            
+            if (gastos.length === 0) {
+                estadoVacio.classList.remove('hidden');
+                listaGastos.classList.add('hidden');
+                btnLimpiar.classList.add('hidden');
+            } else {
+                estadoVacio.classList.add('hidden');
+                listaGastos.classList.remove('hidden');
+                btnLimpiar.classList.remove('hidden');
+
+                // Mostrar de más reciente a más antiguo
+                const gastosInvertidos = [...gastos].reverse();
+
+                gastosInvertidos.forEach((gasto, index) => {
+                    const originalIndex = gastos.length - 1 - index;
+                    const catData = categoriasData[gasto.categoria] || categoriasData.oficina;
+                    
+                    // Formatear la fecha seleccionada para mostrar (DD/MM/YYYY)
+                    const [year, month, day] = gasto.fecha.split('-');
+                    const fechaMostrar = `${day}/${month}/${year}`;
+
+                    let badgeFactura = '';
+                    if (gasto.factura) {
+                        badgeFactura = `<span class="inline-flex items-center gap-1 bg-slate-100 text-slate-600 px-2 py-1 rounded-md text-xs font-medium border border-slate-200">
+                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                             Fact. #${gasto.factura}
+                           </span>`;
+                           
+                        // Añadir botón de ver foto si la tiene
+                        if (gasto.fotoFactura) {
+                            badgeFactura += `
+                            <button onclick="verImagenFactura(${originalIndex})" class="inline-flex items-center gap-1 bg-hdc-goldLight text-hdc-blue px-2 py-1 rounded-md text-xs font-bold border border-hdc-gold hover:bg-hdc-gold hover:text-white transition-colors cursor-pointer">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                Ver Foto
+                            </button>
+                            `;
+                        }
+                    }
+
+                    const li = document.createElement('li');
+                    li.className = 'p-5 sm:p-6 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 fade-in';
+                    
+                    li.innerHTML = `
+                        <div class="flex items-start gap-4">
+                            <div class="p-3 ${catData.bg} ${catData.color} rounded-xl shrink-0">
+                                ${getIconSVG(gasto.categoria)}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-lg leading-tight mb-1">${gasto.concepto}</h4>
+                                <div class="flex flex-wrap items-center gap-2 text-sm">
+                                    <span class="font-medium ${catData.color}">${catData.nombre}</span>
+                                    <span class="text-slate-300">•</span>
+                                    <span class="text-slate-500">${fechaMostrar}</span>
+                                    ${badgeFactura ? '<span class="text-slate-300 hidden sm:inline">•</span>' + badgeFactura : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto border-t sm:border-t-0 pt-4 sm:pt-0 border-slate-100 mt-2 sm:mt-0">
+                            <div class="text-right">
+                                <span class="font-bold text-slate-800 text-xl block">
+                                    -${formatMoneda(gasto.monto)} <span class="text-sm font-normal text-slate-500">Bs</span>
+                                </span>
+                            </div>
+                            <button onclick="eliminarGasto(${originalIndex})" class="bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 transition-colors p-2.5 rounded-lg ml-2" title="Eliminar registro">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    `;
+                    listaGastos.appendChild(li);
+                });
+            }
+
+            localStorage.setItem('hdc_control_gastos_v2', JSON.stringify(gastos));
+            localStorage.setItem('hdc_presupuesto', presupuestoInicial);
+        }
+
+        // Manejar Envío del Formulario
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const concepto = document.getElementById('concepto').value.trim();
+            const monto = parseFloat(document.getElementById('monto').value);
+            const categoria = document.getElementById('categoria').value;
+            const fecha = document.getElementById('fecha').value;
+            const tieneFact = checkFactura.checked;
+            const numFact = tieneFact ? numFacturaInput.value.trim() : null;
+            const fotoData = tieneFact ? fotoFacturaActualBase64 : null; // Foto adjunta
+
+            if (isNaN(monto) || monto <= 0) {
+                mostrarAlerta('Error', 'El monto debe ser mayor a 0.', 'error');
+                return;
+            }
+            if (tieneFact && !numFact) {
+                mostrarAlerta('Falta información', 'Marcaste que tiene factura, por favor ingresa el número.', 'warning');
+                return;
+            }
+
+            const totalActual = gastos.reduce((acc, current) => acc + current.monto, 0);
+            if ((totalActual + monto) > presupuestoInicial) {
+                mostrarAlerta(
+                    'Presupuesto Excedido', 
+                    `Este gasto superará tu saldo disponible. ¿Registrar de todos modos?`, 
+                    'warning', true, 
+                    () => procesarGasto(concepto, monto, categoria, fecha, numFact, fotoData)
+                );
+            } else {
+                procesarGasto(concepto, monto, categoria, fecha, numFact, fotoData);
+            }
+        });
+
+        function procesarGasto(concepto, monto, categoria, fecha, factura, fotoFactura) {
+            gastos.push({ id: Date.now().toString(), concepto, monto, categoria, fecha, factura, fotoFactura });
+            
+            // Intentar guardar en localStorage. Si la imagen es muy grande y falla, manejamos el error.
+            try {
+                localStorage.setItem('hdc_control_gastos_v2', JSON.stringify(gastos));
+                actualizarUI();
+                
+                // Limpiar formulario parcialmente
+                document.getElementById('concepto').value = '';
+                document.getElementById('monto').value = '';
+                checkFactura.checked = false;
+                contenedorFactura.classList.add('hidden');
+                numFacturaInput.value = '';
+                limpiarFoto();
+                document.getElementById('concepto').focus();
+            } catch (e) {
+                console.error(e);
+                gastos.pop(); // Revertir si hay error
+                mostrarAlerta('Error de Memoria', 'La imagen es demasiado pesada para el almacenamiento local. Intenta con una foto de menor resolución.', 'error');
+            }
+        }
+
+        window.eliminarGasto = function(index) {
+            mostrarAlerta(
+                'Eliminar Registro', 
+                `¿Deseas eliminar "${gastos[index].concepto}"?`,
+                'warning', true,
+                () => {
+                    gastos.splice(index, 1);
+                    actualizarUI();
+                }
+            );
+        };
+
+        btnLimpiar.addEventListener('click', () => {
+            mostrarAlerta(
+                'Borrar Historial',
+                '¿Eliminar todos los registros? Tu saldo se restablecerá al presupuesto inicial.',
+                'error', true,
+                () => {
+                    gastos = [];
+                    actualizarUI();
+                }
+            );
+        });
+
+        // --- Modal de Presupuesto ---
+        const modalPres = document.getElementById('modal-presupuesto');
+        const modalPresContent = document.getElementById('modal-presupuesto-content');
+        const inputNuevoPres = document.getElementById('input-nuevo-presupuesto');
+
+        window.abrirModalPresupuesto = function() {
+            inputNuevoPres.value = presupuestoInicial;
+            modalPres.classList.remove('hidden');
+            setTimeout(() => {
+                modalPresContent.classList.remove('scale-95', 'opacity-0');
+                modalPresContent.classList.add('scale-100', 'opacity-100');
+                inputNuevoPres.focus();
+            }, 10);
+        }
+
+        window.cerrarModalPresupuesto = function() {
+            modalPresContent.classList.remove('scale-100', 'opacity-100');
+            modalPresContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => modalPres.classList.add('hidden'), 200);
+        }
+
+        window.guardarPresupuesto = function() {
+            const nuevoMonto = parseFloat(inputNuevoPres.value);
+            if (!isNaN(nuevoMonto) && nuevoMonto >= 0) {
+                presupuestoInicial = nuevoMonto;
+                actualizarUI();
+                cerrarModalPresupuesto();
+            } else {
+                mostrarAlerta('Valor inválido', 'Ingresa un monto válido mayor o igual a cero.', 'error');
+            }
+        }
+
+        // --- Alertas Custom ---
+        const modalAlerta = document.getElementById('custom-alert');
+        const alertContent = document.getElementById('alert-content');
+        const alertTitle = document.getElementById('alert-title');
+        const alertMessage = document.getElementById('alert-message');
+        const alertIconBg = document.getElementById('alert-icon-bg');
+        const alertIcon = document.getElementById('alert-icon');
+        const btnOk = document.getElementById('alert-btn-ok');
+        const btnCancel = document.getElementById('alert-btn-cancelar');
+        let currentConfirmCallback = null;
+
+        function mostrarAlerta(titulo, mensaje, tipo = 'info', showCancel = false, confirmCallback = null) {
+            alertTitle.textContent = titulo;
+            alertMessage.textContent = mensaje;
+            currentConfirmCallback = confirmCallback;
+
+            if (tipo === 'error') {
+                alertIconBg.className = "mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-red-100 mb-4 text-red-600";
+                alertIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />`;
+                btnOk.className = "flex-1 px-4 py-2.5 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors";
+            } else if (tipo === 'warning') {
+                alertIconBg.className = "mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-orange-100 mb-4 text-orange-600";
+                alertIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />`;
+                btnOk.className = "flex-1 px-4 py-2.5 bg-hdc-blue text-white font-semibold rounded-xl hover:bg-hdc-blueLight transition-colors";
+            } else {
+                alertIconBg.className = "mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-blue-100 mb-4 text-hdc-blue";
+                alertIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />`;
+                btnOk.className = "flex-1 px-4 py-2.5 bg-hdc-blue text-white font-semibold rounded-xl hover:bg-hdc-blueLight transition-colors";
+            }
+
+            if (showCancel) {
+                btnCancel.classList.remove('hidden');
+                btnOk.textContent = "Confirmar";
+            } else {
+                btnCancel.classList.add('hidden');
+                btnOk.textContent = "Entendido";
+            }
+
+            modalAlerta.classList.remove('hidden');
+            setTimeout(() => {
+                alertContent.classList.remove('scale-95', 'opacity-0');
+                alertContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function cerrarAlerta() {
+            alertContent.classList.remove('scale-100', 'opacity-100');
+            alertContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modalAlerta.classList.add('hidden');
+                currentConfirmCallback = null;
+            }, 200);
+        }
+
+        btnOk.addEventListener('click', () => {
+            if (currentConfirmCallback) currentConfirmCallback();
+            cerrarAlerta();
+        });
+
+        btnCancel.addEventListener('click', cerrarAlerta);
+
+        window.abrirGaleria = function() {
+            const gastosConFoto = gastos.filter(g => g.fotoFactura);
+            
+            gridGaleria.innerHTML = '';
+            
+            if (gastosConFoto.length === 0) {
+                gridGaleria.classList.add('hidden');
+                galeriaVacia.classList.remove('hidden');
+            } else {
+                gridGaleria.classList.remove('hidden');
+                galeriaVacia.classList.add('hidden');
+                
+                gastosConFoto.forEach(gasto => {
+                    // Encontrar el índice real para el visor
+                    const realIndex = gastos.findIndex(g => g.id === gasto.id);
+                    
+                    const div = document.createElement('div');
+                    div.className = 'group relative aspect-square bg-slate-800 rounded-xl overflow-hidden cursor-pointer border border-slate-700 hover:border-hdc-gold transition-colors shadow-lg';
+                    div.onclick = () => verImagenFactura(realIndex);
+                    
+                    div.innerHTML = `
+                        <img src="${gasto.fotoFactura}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity group-hover:scale-105 transform duration-300">
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3 pt-6">
+                            <p class="text-white text-xs font-bold truncate">${gasto.concepto}</p>
+                            <p class="text-hdc-goldLight text-[10px]">Fact. #${gasto.factura}</p>
+                        </div>
+                    `;
+                    gridGaleria.appendChild(div);
+                });
+            }
+            
+            modalGaleria.classList.remove('hidden');
+        }
+
+        window.cerrarGaleria = function() {
+            modalGaleria.classList.add('hidden');
+        }
+
+        window.verImagenFactura = function(index) {
+            const gasto = gastos[index];
+            if (!gasto || !gasto.fotoFactura) return;
+            
+            visorImagenSrc.src = gasto.fotoFactura;
+            visorImagenInfo.innerHTML = `
+                <p class="font-bold text-lg">${gasto.concepto}</p>
+                <p class="text-sm text-hdc-goldLight">Factura #${gasto.factura} - ${formatMoneda(gasto.monto)} Bs</p>
+                <p class="text-xs text-slate-300 mt-1">Fecha: ${gasto.fecha}</p>
+            `;
+            
+            modalVisorImg.classList.remove('hidden');
+        }
+
+        window.cerrarVisorImg = function() {
+            modalVisorImg.classList.add('hidden');
+            visorImagenSrc.src = '';
+        }
+
+        // Arrancar
+        init();
+    </script>
+</body>
+</html>
